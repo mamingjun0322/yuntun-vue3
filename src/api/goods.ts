@@ -4,8 +4,7 @@ export interface Goods {
   id?: number
   categoryId: number
   name: string
-  image: string
-  images?: string[]
+  images: string
   price: string
   originalPrice?: string
   description?: string

@@ -83,9 +83,10 @@ export const updateOrderStatus = (id: number, status: number) => {
 /**
  * 获取订单统计
  */
-export const getOrderStatistics = () => {
+export const getOrderStatistics = (days?: number) => {
   return request<OrderStatistics>({
     url: '/admin/order/statistics',
-    method: 'get'
+    method: 'get',
+    params: days ? { days } : {}
   })
 }

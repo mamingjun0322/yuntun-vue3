@@ -144,7 +144,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getOrderStatistics, type OrderStatistics } from '@/api/order'
@@ -170,32 +170,134 @@ const orderTrendOption = computed(() => ({
   tooltip: {
     trigger: 'axis',
     axisPointer: {
-      type: 'shadow'
+      type: 'cross',
+      label: {
+        backgroundColor: '#6a7985'
+      }
+    },
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderColor: '#ddd',
+    borderWidth: 1,
+    textStyle: {
+      color: '#333'
+    },
+    formatter: function(params: any) {
+      let result = `<div style="padding: 8px;">`
+      result += `<div style="font-weight: 600; margin-bottom: 8px; color: #303133;">${params[0].axisValue}</div>`
+      params.forEach((item: any) => {
+        const value = item.seriesName === '营业额' ? `¥${parseFloat(item.value).toFixed(2)}` : item.value
+        result += `
+          <div style="display: flex; align-items: center; margin-bottom: 4px;">
+            <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: ${item.color}; margin-right: 8px;"></span>
+            <span style="color: #606266;">${item.seriesName}:</span>
+            <span style="margin-left: 8px; font-weight: 600; color: #303133;">${value}</span>
+          </div>
+        `
+      })
+      result += `</div>`
+      return result
     }
   },
   grid: {
     left: '3%',
     right: '4%',
     bottom: '3%',
+    top: '10%',
     containLabel: true
+  },
+  legend: {
+    data: ['订单数量', '营业额'],
+    top: '0%',
+    textStyle: {
+      color: '#606266'
+    }
   },
   xAxis: {
     type: 'category',
     data: statistics.orderTrend.map(item => item.date) || [],
-    axisTick: {
-      alignWithLabel: true
+    boundaryGap: false,
+    axisLine: {
+      lineStyle: {
+        color: '#dcdfe6'
+      }
+    },
+    axisLabel: {
+      color: '#606266',
+      rotate: 30,
+      formatter: function(value: string) {
+        // 直接显示日期，后端已经根据天数返回了合适的格式
+        return value
+      }
     }
   },
-  yAxis: {
-    type: 'value'
-  },
+  yAxis: [
+    {
+      type: 'value',
+      name: '订单数量',
+      position: 'left',
+      axisLine: {
+        lineStyle: {
+          color: '#667eea'
+        }
+      },
+      axisLabel: {
+        color: '#606266',
+        formatter: '{value}'
+      },
+      splitLine: {
+        lineStyle: {
+          color: '#f0f0f0',
+          type: 'dashed'
+        }
+      }
+    },
+    {
+      type: 'value',
+      name: '营业额(元)',
+      position: 'right',
+      axisLine: {
+        lineStyle: {
+          color: '#67c23a'
+        }
+      },
+      axisLabel: {
+        color: '#606266',
+        formatter: '¥{value}'
+      },
+      splitLine: {
+        show: false
+      }
+    }
+  ],
   series: [
     {
       name: '订单数量',
-      type: 'bar',
-      barWidth: '60%',
+      type: 'line',
+      yAxisIndex: 0,
       data: statistics.orderTrend.map(item => item.count) || [],
+      smooth: true,
+      symbol: 'circle',
+      symbolSize: 8,
+      lineStyle: {
+        width: 3,
+        color: {
+          type: 'linear',
+          x: 0,
+          y: 0,
+          x2: 1,
+          y2: 0,
+          colorStops: [
+            { offset: 0, color: '#667eea' },
+            { offset: 1, color: '#764ba2' }
+          ]
+        }
+      },
       itemStyle: {
+        color: '#667eea',
+        borderWidth: 2,
+        borderColor: '#fff'
+      },
+      areaStyle: {
         color: {
           type: 'linear',
           x: 0,
@@ -203,9 +305,68 @@ const orderTrendOption = computed(() => ({
           x2: 0,
           y2: 1,
           colorStops: [
-            { offset: 0, color: '#667eea' },
-            { offset: 1, color: '#764ba2' }
+            { offset: 0, color: 'rgba(102, 126, 234, 0.3)' },
+            { offset: 1, color: 'rgba(102, 126, 234, 0.05)' }
           ]
+        }
+      },
+      emphasis: {
+        itemStyle: {
+          color: '#667eea',
+          borderColor: '#667eea',
+          borderWidth: 2,
+          shadowBlur: 10,
+          shadowColor: 'rgba(102, 126, 234, 0.5)'
+        }
+      }
+    },
+    {
+      name: '营业额',
+      type: 'line',
+      yAxisIndex: 1,
+      data: statistics.orderTrend.map(item => parseFloat(item.amount || '0')) || [],
+      smooth: true,
+      symbol: 'circle',
+      symbolSize: 8,
+      lineStyle: {
+        width: 3,
+        color: {
+          type: 'linear',
+          x: 0,
+          y: 0,
+          x2: 1,
+          y2: 0,
+          colorStops: [
+            { offset: 0, color: '#67c23a' },
+            { offset: 1, color: '#85ce61' }
+          ]
+        }
+      },
+      itemStyle: {
+        color: '#67c23a',
+        borderWidth: 2,
+        borderColor: '#fff'
+      },
+      areaStyle: {
+        color: {
+          type: 'linear',
+          x: 0,
+          y: 0,
+          x2: 0,
+          y2: 1,
+          colorStops: [
+            { offset: 0, color: 'rgba(103, 194, 58, 0.3)' },
+            { offset: 1, color: 'rgba(103, 194, 58, 0.05)' }
+          ]
+        }
+      },
+      emphasis: {
+        itemStyle: {
+          color: '#67c23a',
+          borderColor: '#67c23a',
+          borderWidth: 2,
+          shadowBlur: 10,
+          shadowColor: 'rgba(103, 194, 58, 0.5)'
         }
       }
     }
@@ -272,7 +433,8 @@ const viewOrder = (order: any) => {
 const loadStatistics = async () => {
   loading.value = true
   try {
-    const res = await getOrderStatistics()
+    const days = trendType.value === 'week' ? 7 : 30
+    const res = await getOrderStatistics(days)
     Object.assign(statistics, res.data)
   } catch (error) {
     ElMessage.error('加载统计数据失败')
@@ -280,6 +442,11 @@ const loadStatistics = async () => {
     loading.value = false
   }
 }
+
+// 监听趋势类型变化
+watch(trendType, () => {
+  loadStatistics()
+})
 
 onMounted(() => {
   loadStatistics()

@@ -42,11 +42,11 @@
         style="width: 100%"
       >
         <el-table-column type="index" label="序号" width="60" />
-        <el-table-column prop="image" label="商品图片" width="100">
+        <el-table-column prop="images" label="商品图片" width="100">
           <template #default="{ row }">
             <el-image
-              :src="row.image"
-              :preview-src-list="[row.image]"
+              :src="row.images"
+              :preview-src-list="[row.images]"
               fit="cover"
               style="width: 60px; height: 60px; border-radius: 4px"
             />
@@ -127,7 +127,7 @@
             />
           </el-select>
         </el-form-item>
-        <el-form-item label="商品图片" prop="image">
+        <el-form-item label="商品图片" prop="images">
           <el-upload
             class="image-uploader"
             :action="uploadUrl"
@@ -138,7 +138,7 @@
             :before-upload="beforeUpload"
             accept="image/*"
           >
-            <img v-if="goodsForm.image" :src="goodsForm.image" class="uploaded-image" />
+            <img v-if="goodsForm.images" :src="goodsForm.images" class="uploaded-image" />
             <el-icon v-else class="uploader-icon"><Plus /></el-icon>
           </el-upload>
           <div class="upload-tip">支持 JPG、PNG 格式，大小不超过 2MB</div>
@@ -223,7 +223,7 @@ const searchForm = reactive({
 const goodsForm = reactive<Goods>({
   name: '',
   categoryId: 0,
-  image: '',
+  images: '',
   price: '',
   originalPrice: '',
   stock: 0,
@@ -234,7 +234,7 @@ const goodsForm = reactive<Goods>({
 const goodsRules: FormRules = {
   name: [{ required: true, message: '请输入商品名称', trigger: 'blur' }],
   categoryId: [{ required: true, message: '请选择分类', trigger: 'change' }],
-  image: [{ required: true, message: '请输入图片URL', trigger: 'blur' }],
+  images: [{ required: true, message: '请上传商品图片', trigger: 'blur' }],
   price: [{ required: true, message: '请输入价格', trigger: 'blur' }],
   stock: [{ required: true, message: '请输入库存', trigger: 'blur' }]
 }
@@ -356,7 +356,7 @@ const resetForm = () => {
   Object.assign(goodsForm, {
     name: '',
     categoryId: 0,
-    image: '',
+    images: '',
     price: '',
     originalPrice: '',
     stock: 0,
@@ -384,13 +384,15 @@ const beforeUpload: UploadProps['beforeUpload'] = (file) => {
 
 // 图片上传成功
 const handleUploadSuccess: UploadProps['onSuccess'] = (response) => {
+  console.log('上传响应:', response)
   if (response.code === 200) {
-    goodsForm.image = response.data
+    goodsForm.images = response.data
+    console.log('图片URL:', goodsForm.images)
     // 触发表单验证，清除错误提示
-    goodsFormRef.value?.clearValidate('image')
+    goodsFormRef.value?.clearValidate('images')
     ElMessage.success('上传成功')
   } else {
-    ElMessage.error(response.message || '上传失败')
+    ElMessage.error(response.message || response.msg || '上传失败')
   }
 }
 

@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import customerServiceRouter from './modules/customerService'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -53,6 +54,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '轮播图管理', icon: 'Picture' }
       },
       {
+        path: '/notice',
+        name: 'Notice',
+        component: () => import('@/views/Notice.vue'),
+        meta: { title: '通知管理', icon: 'Bell' }
+      },
+      {
         path: '/payment-link',
         name: 'PaymentLink',
         component: () => import('@/views/PaymentLink.vue'),
@@ -71,7 +78,8 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '系统设置', icon: 'Setting' }
       }
     ]
-  }
+  },
+  customerServiceRouter
 ]
 
 const router = createRouter({
