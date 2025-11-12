@@ -5,7 +5,7 @@
         <el-card shadow="hover" class="info-card">
           <template #header>
             <div class="card-header">
-              <el-icon><Setting /></el-icon>
+              <el-icon><Tools /></el-icon>
               <span>系统设置</span>
             </div>
           </template>

@@ -48,6 +48,7 @@
         v-loading="loading"
         :data="orderList"
         stripe
+        :row-class-name="tableRowClassName"
         style="width: 100%"
       >
         <el-table-column prop="orderNo" label="订单号" min-width="160" fixed="left" />
@@ -216,7 +217,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, nextTick } from 'vue'
+import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Refresh, View } from '@element-plus/icons-vue'
 import {
@@ -225,6 +227,8 @@ import {
   type Order
 } from '@/api/order'
 import { formatMoney, formatDateTime, getOrderStatusText, getOrderTypeText } from '@/utils/format'
+
+const route = useRoute()
 
 const loading = ref(false)
 const detailVisible = ref(false)
@@ -240,6 +244,8 @@ const searchForm = reactive({
 const orderList = ref<Order[]>([])
 const total = ref(0)
 const currentOrder = ref<Order | null>(null)
+const highlightOrderId = ref<number | null>(null)
+const isFirstLoad = ref(true) // 标记是否首次加载
 
 const getStatusType = (status: number) => {
   const typeMap: Record<number, string> = {
@@ -252,12 +258,50 @@ const getStatusType = (status: number) => {
   return typeMap[status] || 'info'
 }
 
+const tableRowClassName = ({ row }: { row: Order }) => {
+  return row.id === highlightOrderId.value ? 'highlight-row' : ''
+}
+
 const loadOrderList = async () => {
   loading.value = true
   try {
     const res = await apiGetOrderList(searchForm)
     orderList.value = res.data.records
     total.value = res.data.total
+    
+    // 只在首次加载且有订单ID参数时，自动打开订单详情
+    if (isFirstLoad.value) {
+      await nextTick()
+      const orderId = route.query.orderId as string
+      const orderNo = route.query.orderNo as string
+      
+      if (orderId && orderList.value.length > 0) {
+        const targetOrder = orderList.value.find(order => order.id === Number(orderId))
+        if (targetOrder) {
+          // 找到订单，设置高亮并打开详情
+          highlightOrderId.value = targetOrder.id
+          handleView(targetOrder)
+          ElMessage.success(`已定位到订单：${orderNo}`)
+          // 5秒后取消高亮
+          setTimeout(() => {
+            highlightOrderId.value = null
+          }, 5000)
+        } else if (orderNo && !searchForm.keyword) {
+          // 列表中没找到且还没设置过搜索关键词，尝试用订单号搜索
+          searchForm.keyword = orderNo
+          ElMessage.info(`正在搜索订单：${orderNo}`)
+          // 标记为非首次加载，避免重复处理
+          isFirstLoad.value = false
+          // 重新加载
+          setTimeout(() => loadOrderList(), 500)
+          return
+        }
+        // 清除URL参数避免重复触发
+        window.history.replaceState({}, '', '/order')
+      }
+      // 标记为非首次加载
+      isFirstLoad.value = false
+    }
   } catch (error) {
     ElMessage.error('加载订单列表失败')
   } finally {
@@ -275,6 +319,8 @@ const handleReset = () => {
   searchForm.status = undefined
   searchForm.keyword = ''
   searchForm.page = 1
+  // 重置时不再是首次加载
+  isFirstLoad.value = false
   loadOrderList()
 }
 
@@ -303,6 +349,13 @@ const handleUpdateStatus = (row: Order, status: number) => {
 }
 
 onMounted(() => {
+  // 检查是否有订单参数，如果有则先设置搜索条件
+  const orderNo = route.query.orderNo as string
+  if (orderNo) {
+    searchForm.keyword = orderNo
+    // 清除URL参数
+    window.history.replaceState({}, '', '/order')
+  }
   loadOrderList()
 })
 </script>
@@ -338,6 +391,24 @@ onMounted(() => {
     margin-top: 20px;
     display: flex;
     justify-content: flex-end;
+  }
+
+  // 高亮目标订单行
+  :deep(.highlight-row) {
+    background-color: #fdf6ec !important;
+    animation: highlight-fade 5s ease-in-out;
+  }
+
+  @keyframes highlight-fade {
+    0% {
+      background-color: #fef0d9;
+    }
+    50% {
+      background-color: #fdf6ec;
+    }
+    100% {
+      background-color: transparent;
+    }
   }
 }
 </style>

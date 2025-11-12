@@ -426,8 +426,14 @@ const getStatusType = (status: number) => {
 }
 
 const viewOrder = (order: any) => {
-  ElMessage.info(`查看订单：${order.orderNo}`)
-  router.push('/order')
+  // 跳转到订单页面并传递订单ID
+  router.push({
+    path: '/order',
+    query: {
+      orderId: order.id,
+      orderNo: order.orderNo
+    }
+  })
 }
 
 const loadStatistics = async () => {
